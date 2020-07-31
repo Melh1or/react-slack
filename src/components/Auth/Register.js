@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import firebase from '../../firebase'
+import md5 from 'md5'
 import {
   Grid,
   Form,
@@ -19,7 +20,8 @@ class Register extends Component {
     password: '',
     passwordConfirmation: '',
     errors: [],
-    loading: false
+    loading: false,
+    usersRef: firebase.database().ref('users')
   }
 
   isFormValid = () => {
@@ -66,17 +68,43 @@ class Register extends Component {
     this.setState({ [e.target.name]: e.target.value })
   }
 
+  saveUser = (createdUser) => {
+    return this.state.usersRef.child(createdUser.user.uid).set({
+      name: createdUser.user.displayName,
+      avatar: createdUser.user.photoURL
+    })
+  }
+
   handleSubmit = (e) => {
     e.preventDefault()
 
     if (this.isFormValid()) {
       this.setState({ errors: [], loading: true })
+
       firebase
         .auth()
         .createUserWithEmailAndPassword(this.state.email, this.state.password)
         .then((createdUser) => {
           console.log(createdUser)
-          this.setState({ loading: false })
+          createdUser.user
+            .updateProfile({
+              displayName: this.state.username,
+              photoURL: `http://gravatar.com/avatar/${md5(
+                createdUser.user.email
+              )}?d=identicon`
+            })
+            .then(() => {
+              this.saveUser(createdUser).then(() => {
+                console.log('user saved')
+              })
+            })
+            .catch((err) => {
+              console.log(err)
+              this.setState({
+                errors: this.state.errors.concat(err),
+                loading: false
+              })
+            })
         })
         .catch((err) => {
           console.log(err)
@@ -89,7 +117,9 @@ class Register extends Component {
   }
 
   handleInputError = (errors, inputName) => {
-    return errors.some((error) => error.message.toLowerCase().includes(inputName))
+    return errors.some((error) =>
+      error.message.toLowerCase().includes(inputName)
+    )
       ? 'error'
       : ''
   }
