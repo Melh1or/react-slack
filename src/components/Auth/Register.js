@@ -18,7 +18,8 @@ class Register extends Component {
     email: '',
     password: '',
     passwordConfirmation: '',
-    errors: []
+    errors: [],
+    loading: false
   }
 
   isFormValid = () => {
@@ -66,15 +67,31 @@ class Register extends Component {
   }
 
   handleSubmit = (e) => {
-    if (this.isFormValid()) {
-      e.preventDefault()
+    e.preventDefault()
 
+    if (this.isFormValid()) {
+      this.setState({ errors: [], loading: true })
       firebase
         .auth()
         .createUserWithEmailAndPassword(this.state.email, this.state.password)
-        .then((createdUser) => console.log(createdUser))
-        .catch((err) => console.log(err))
+        .then((createdUser) => {
+          console.log(createdUser)
+          this.setState({ loading: false })
+        })
+        .catch((err) => {
+          console.log(err)
+          this.setState({
+            loading: false,
+            errors: this.state.errors.concat(err)
+          })
+        })
     }
+  }
+
+  handleInputError = (errors, inputName) => {
+    return errors.some((error) => error.message.toLowerCase().includes(inputName))
+      ? 'error'
+      : ''
   }
 
   render() {
@@ -83,7 +100,8 @@ class Register extends Component {
       email,
       password,
       passwordConfirmation,
-      errors
+      errors,
+      loading
     } = this.state
 
     return (
@@ -114,6 +132,7 @@ class Register extends Component {
                 iconPosition='left'
                 placeholder='Email'
                 onChange={this.handleChange}
+                className={this.handleInputError(errors, 'email')}
               />
               <Form.Input
                 fluid
@@ -124,6 +143,7 @@ class Register extends Component {
                 iconPosition='left'
                 placeholder='Password'
                 onChange={this.handleChange}
+                className={this.handleInputError(errors, 'password')}
               />
               <Form.Input
                 fluid
@@ -134,9 +154,16 @@ class Register extends Component {
                 iconPosition='left'
                 placeholder='Password Confirmation'
                 onChange={this.handleChange}
+                className={this.handleInputError(errors, 'password')}
               />
 
-              <Button color='orange' fluid size='large'>
+              <Button
+                className={loading ? 'loading' : ''}
+                disabled={loading}
+                color='orange'
+                fluid
+                size='large'
+              >
                 Submit
               </Button>
             </Segment>
