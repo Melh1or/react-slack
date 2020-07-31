@@ -12,11 +12,23 @@ class Channels extends Component {
     user: this.props.currentUser
   }
 
+  componentDidMount() {
+    this.addListeners()
+  }
+
+  addListeners = () => {
+    let loadedChannels = []
+    this.state.channelsRef.on('child_added', snap => {
+      loadedChannels.push(snap.val())
+      this.setState({ channels: loadedChannels })
+    })
+  }
+
   closeModal = () => this.setState({ modal: false })
 
   openModal = () => this.setState({ modal: true })
 
-  handleChange = (e) => this.setState({ [e.target.name]: e.target.value })
+  handleChange = e => this.setState({ [e.target.name]: e.target.value })
 
   addChannel = () => {
     const { channelsRef, channelName, channelDetails, user } = this.state
@@ -41,12 +53,12 @@ class Channels extends Component {
         this.closeModal()
         console.log('add channel')
       })
-      .catch((err) => {
+      .catch(err => {
         console.log(err)
       })
   }
 
-  handleSubmit = (e) => {
+  handleSubmit = e => {
     e.preventDefault()
 
     if (this.isFormValid(this.state)) {
@@ -56,6 +68,19 @@ class Channels extends Component {
     } else {
     }
   }
+
+  displayChannels = channels => (
+    channels.length > 0 && channels.map(channel => (
+      <Menu.Item
+        key={channel.id}
+        onClick={() => console.log(channel)}
+        name={channel.name}
+        style={{ opacity: 0.7 }}
+      >
+        # {channel.name}
+      </Menu.Item>
+    ))
+  )
 
   isFormValid = ({ channelName, channelDetails }) =>
     channelName && channelDetails
@@ -71,7 +96,7 @@ class Channels extends Component {
             </span>{' '}
             ({channels.length}) <Icon name='add' onClick={this.openModal} />
           </Menu.Item>
-          {/* Channels */}
+          {this.displayChannels(channels)}
         </Menu.Menu>
         {/* Add chanel modal */}
         <Modal basic open={modal} onClose={this.closeModal}>
