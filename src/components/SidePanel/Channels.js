@@ -109,7 +109,7 @@ class Channels extends Component {
         style={{ opacity: 0.7 }}
         active={channel.id === this.state.activeChannel}
       >
-        # {channel.name}
+        {channel.name}
       </Menu.Item>
     ))
 
@@ -120,7 +120,7 @@ class Channels extends Component {
     const { channels, modal } = this.state
     return (
       <Fragment>
-        <Menu.Menu style={{ paddingBottom: '2em' }}>
+        <Menu.Menu className='menu'>
           <Menu.Item>
             <span>
               <Icon name='exchange' /> CHANNELS
