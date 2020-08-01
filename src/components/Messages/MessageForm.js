@@ -1,11 +1,16 @@
 import React, { Component } from 'react'
+import { v4 as uuid } from 'uuid'
 import { Segment, Button, Input } from 'semantic-ui-react'
 import firebase from '../../firebase'
-import FileModal from './FIleModal'
+import FileModal from './FileModal'
 
 class MessageForm extends Component {
   state = {
+    storageRef: firebase.storage().ref(),
+    uploadTask: null,
+    uploadState: '',
     message: '',
+    percentUploaded: 0,
     loading: false,
     channel: this.props.currentChannel,
     user: this.props.currentUser,
@@ -49,17 +54,81 @@ class MessageForm extends Component {
     }
   }
 
-  uploadFile = (file, metadata) => {}
+  uploadFile = (file, metadata) => {
+    const pathToUpload = this.state.channel.id
+    const ref = this.props.messagesRef
+    const filePath = `chat/public/${uuid()}.jpg`
 
-  createMessage = () => {
+    this.setState(
+      {
+        uploadState: 'uploading',
+        uploadTask: this.state.storageRef.child(filePath).put(file, metadata)
+      },
+      () => {
+        this.state.uploadTask.on(
+          'state_changed',
+          snap => {
+            const percentUploaded = Math.round(
+              (snap.bytesTransferred / snap.totalBytes) * 100
+            )
+
+            this.setState({ percentUploaded })
+          },
+          err => {
+            console.log(err)
+            this.setState({
+              errors: this.state.errors.concat(err),
+              uploadState: 'error',
+              uploadTask: null
+            })
+          },
+          () => {
+            this.state.uploadTask.snapshot.ref
+              .getDownloadURL()
+              .then(downloadURL => {
+                this.sendFileMessage(downloadURL, ref, pathToUpload)
+              })
+              .catch(err => {
+                this.setState({
+                  errors: this.state.errors.concat(err),
+                  uploadState: 'error',
+                  uploadTask: null
+                })
+              })
+          }
+        )
+      }
+    )
+  }
+
+  sendFileMessage = (fileUrl, ref, pathToUpload) => {
+    ref
+      .child(pathToUpload)
+      .push()
+      .set(this.createMessage(fileUrl))
+      .then(() => {
+        this.setState({ uploadState: 'done' })
+      })
+      .catch(err => {
+        console.log(err)
+        this.setState({ errors: this.state.errors.concat(err) })
+      })
+  }
+
+  createMessage = (fileUrl = null) => {
     const message = {
-      content: this.state.message,
       timestamp: firebase.database.ServerValue.TIMESTAMP,
       user: {
         id: this.state.user.uid,
         name: this.state.user.displayName,
         avatar: this.state.user.photoURL
       }
+    }
+
+    if (fileUrl !== null) {
+      message['image'] = fileUrl
+    } else {
+      message['content'] = this.state.message
     }
 
     return message
