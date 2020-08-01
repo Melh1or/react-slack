@@ -49,6 +49,8 @@ class MessageForm extends Component {
     }
   }
 
+  uploadFile = (file, metadata) => {}
+
   createMessage = () => {
     const message = {
       content: this.state.message,
@@ -99,7 +101,11 @@ class MessageForm extends Component {
             labelPosition='right'
             icon='cloud upload'
           />
-          <FileModal modal={modal} closeModal={this.closeModal} />
+          <FileModal
+            uploadFile={this.uploadFile}
+            modal={modal}
+            closeModal={this.closeModal}
+          />
         </Button.Group>
       </Segment>
     )
