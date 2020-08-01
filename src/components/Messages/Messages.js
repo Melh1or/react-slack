@@ -12,7 +12,9 @@ class Messages extends Component {
     channel: this.props.currentChannel,
     user: this.props.currentUser,
     messages: [],
-    messagesLoading: true
+    messagesLoading: true,
+    progressBar: false,
+    numUniquesUsers: ''
   }
 
   componentDidMount() {
@@ -36,28 +38,62 @@ class Messages extends Component {
         messages: loadedMessages,
         messagesLoading: false
       })
+      this.countUniqueUsers(loadedMessages)
     })
   }
 
-  displayMessages = messages => {
-    return messages.length > 0 && messages.map(message => 
+  countUniqueUsers = messages => {
+    const uniqueUsers = messages.reduce((acc, message) => {
+      if (!acc.includes(message.user.name)) {
+        acc.push(message.user.name)
+      }
+
+      return acc
+    }, [])
+    const plural = uniqueUsers.length > 1 || uniqueUsers.length === 0
+    const numUniquesUsers = `${uniqueUsers.length} user${plural ? 's' : ''}`
+    this.setState({ numUniquesUsers })
+  }
+
+  displayMessages = messages =>
+    messages.length > 0 &&
+    messages.map(message => (
       <Message
         key={message.timestamp}
         message={message}
         user={this.state.user}
       />
-      )
+    ))
+
+  isProgressBarVisible = percent => {
+    if (percent > 0) {
+      this.setState({ progressBar: true })
+    }
   }
 
+  displayChannelName = channel => (channel ? `#${channel.name}` : '')
+
   render() {
-    const { messagesRef, channel, user, messages, messagesLoading } = this.state
+    const {
+      messagesRef,
+      channel,
+      user,
+      messages,
+      progressBar,
+      numUniquesUsers
+    } = this.state
 
     return (
       <Fragment>
-        <MessagesHeader />
+        <MessagesHeader
+          channelName={this.displayChannelName(channel)}
+          numUniquesUsers={numUniquesUsers}
+        />
 
         <Segment>
-          <Comment.Group className='messages'>
+          <Comment.Group
+            className={progressBar ? 'message__progress' : 'messages'}
+          >
             {this.displayMessages(messages)}
           </Comment.Group>
         </Segment>
@@ -66,6 +102,7 @@ class Messages extends Component {
           messagesRef={messagesRef}
           currentChannel={channel}
           currentUser={user}
+          isProgressBarVisible={this.isProgressBarVisible}
         />
       </Fragment>
     )
